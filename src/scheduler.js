@@ -50,24 +50,10 @@ async function sendSlackReport(webhookUrl, stats, totalMembers, timezone, guildN
                 },
                 {
                     type: "section",
-                    fields: [
-                        {
-                            type: "mrkdwn",
-                            text: `✅ Joined: *${joins}*`
-                        },
-                        {
-                            type: "mrkdwn",
-                            text: `❌ Left: *${leaves}*`
-                        },
-                        {
-                            type: "mrkdwn",
-                            text: `${netEmoji} Net Change: *${netDisplay}*`
-                        },
-                        {
-                            type: "mrkdwn",
-                            text: `👥 Total: *${totalMembers || 'N/A'}*`
-                        }
-                    ]
+                    text: {
+                        type: "mrkdwn",
+                        text: `🟢 *Joined:* ${joins}\n🔴 *Left:* ${leaves}\n${netEmoji} *Net:* ${netDisplay}\n👥 *Total:* ${totalMembers || 'N/A'}`
+                    }
                 }
             ]
         };

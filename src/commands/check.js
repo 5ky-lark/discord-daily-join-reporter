@@ -67,12 +67,10 @@ module.exports = {
                     },
                     {
                         type: "section",
-                        fields: [
-                            { type: "mrkdwn", text: `✅ Joined: *${stats.joins}*` },
-                            { type: "mrkdwn", text: `❌ Left: *${stats.leaves}*` },
-                            { type: "mrkdwn", text: `${netEmoji} Net Change: *${netDisplay}*` },
-                            { type: "mrkdwn", text: `👥 Total: *${totalMembers}*` }
-                        ]
+                        text: {
+                            type: "mrkdwn",
+                            text: `🟢 *Joined:* ${stats.joins}\n🔴 *Left:* ${stats.leaves}\n${netEmoji} *Net:* ${netDisplay}\n👥 *Total:* ${totalMembers}`
+                        }
                     }
                 ]
             };
