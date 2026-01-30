@@ -1,0 +1,20 @@
+{
+  "name": "discord-join-tracker",
+  "version": "1.0.0",
+  "description": "Discord bot that tracks daily member joins/leaves and sends scheduled reports",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "deploy-commands": "node src/deploy-commands.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.0.0",
+    "discord.js": "^14.14.1",
+    "dotenv": "^16.3.1",
+    "node-cron": "^3.0.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
