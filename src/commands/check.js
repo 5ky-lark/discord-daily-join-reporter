@@ -19,7 +19,7 @@ module.exports = {
         const totalMembers = interaction.guild.memberCount;
 
         const embed = new EmbedBuilder()
-            .setTitle('📊 Current Stats (Today)')
+            .setTitle('📊 Current Stats')
             .setColor(netChange > 0 ? 0x00ff00 : netChange < 0 ? 0xff0000 : 0x808080)
             .addFields(
                 { name: '✅ Joined', value: stats.joins.toString(), inline: true },
@@ -57,7 +57,7 @@ module.exports = {
                         type: "header",
                         text: {
                             type: "plain_text",
-                            text: `📊 ${interaction.guild.name}: Current Stats (Today)`,
+                            text: `📊 ${interaction.guild.name}: Current Stats`,
                             emoji: true
                         }
                     },
