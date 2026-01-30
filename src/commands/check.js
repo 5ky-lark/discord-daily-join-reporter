@@ -48,7 +48,7 @@ module.exports = {
                         type: "header",
                         text: {
                             type: "plain_text",
-                            text: "📊 Current Stats (Today)",
+                            text: `📊 ${interaction.guild.name}: Current Stats (Today)`,
                             emoji: true
                         }
                     },

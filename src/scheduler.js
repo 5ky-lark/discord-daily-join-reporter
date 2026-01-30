@@ -8,7 +8,7 @@ const scheduledTasks = new Map();
 /**
  * Send report to Slack via webhook
  */
-async function sendSlackReport(webhookUrl, stats, totalMembers, timezone) {
+async function sendSlackReport(webhookUrl, stats, totalMembers, timezone, guildName) {
     try {
         const date = new Date().toLocaleDateString('en-US', {
             weekday: 'long',
@@ -23,6 +23,7 @@ async function sendSlackReport(webhookUrl, stats, totalMembers, timezone) {
         const netChange = joins - leaves;
         const netEmoji = netChange > 0 ? '📈' : netChange < 0 ? '📉' : '➖';
         const netDisplay = netChange > 0 ? `+${netChange}` : netChange.toString();
+        const serverName = guildName || 'Server';
 
         const slackMessage = {
             blocks: [
@@ -30,7 +31,7 @@ async function sendSlackReport(webhookUrl, stats, totalMembers, timezone) {
                     type: "header",
                     text: {
                         type: "plain_text",
-                        text: "📊 Daily Join Report",
+                        text: `📊 ${serverName}: Daily Join Report`,
                         emoji: true
                     }
                 },
@@ -146,11 +147,13 @@ async function sendDailyReportForGuild(client, guildId) {
             stats = { joins: 0, leaves: 0, net: 0 };
         }
 
-        // Get current member count
+        // Get current member count and guild name
         let totalMembers = null;
+        let guildName = 'Server';
         try {
             const guild = await client.guilds.fetch(guildId);
             totalMembers = guild.memberCount;
+            guildName = guild.name;
         } catch (e) {
             console.error(`[Scheduler] Could not fetch guild ${guildId}:`, e.message);
         }
@@ -162,7 +165,7 @@ async function sendDailyReportForGuild(client, guildId) {
 
         // Send to Slack if configured
         if (config.slack_webhook_url) {
-            await sendSlackReport(config.slack_webhook_url, stats, totalMembers, config.timezone || 'UTC');
+            await sendSlackReport(config.slack_webhook_url, stats, totalMembers, config.timezone || 'UTC', guildName);
         }
     } catch (error) {
         console.error(`[Scheduler] Error sending report for guild ${guildId}:`, error);
