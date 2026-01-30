@@ -35,30 +35,35 @@ async function sendSlackReport(webhookUrl, stats, totalMembers, timezone) {
                     }
                 },
                 {
-                    type: "section",
-                    text: {
-                        type: "mrkdwn",
-                        text: `*${date}*`
-                    }
+                    type: "context",
+                    elements: [
+                        {
+                            type: "mrkdwn",
+                            text: `*${date}*`
+                        }
+                    ]
+                },
+                {
+                    type: "divider"
                 },
                 {
                     type: "section",
                     fields: [
                         {
                             type: "mrkdwn",
-                            text: `*✅ Joined*\n${joins}`
+                            text: `✅ Joined: *${joins}*`
                         },
                         {
                             type: "mrkdwn",
-                            text: `*❌ Left*\n${leaves}`
+                            text: `❌ Left: *${leaves}*`
                         },
                         {
                             type: "mrkdwn",
-                            text: `*${netEmoji} Net Change*\n${netDisplay}`
+                            text: `${netEmoji} Net Change: *${netDisplay}*`
                         },
                         {
                             type: "mrkdwn",
-                            text: `*👥 Total Members*\n${totalMembers || 'N/A'}`
+                            text: `👥 Total: *${totalMembers || 'N/A'}*`
                         }
                     ]
                 }

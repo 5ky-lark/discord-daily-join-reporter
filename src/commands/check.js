@@ -53,19 +53,24 @@ module.exports = {
                         }
                     },
                     {
-                        type: "section",
-                        text: {
-                            type: "mrkdwn",
-                            text: `*${date}*`
-                        }
+                        type: "context",
+                        elements: [
+                            {
+                                type: "mrkdwn",
+                                text: `*${date}*`
+                            }
+                        ]
+                    },
+                    {
+                        type: "divider"
                     },
                     {
                         type: "section",
                         fields: [
-                            { type: "mrkdwn", text: `*✅ Joined*\n${stats.joins}` },
-                            { type: "mrkdwn", text: `*❌ Left*\n${stats.leaves}` },
-                            { type: "mrkdwn", text: `*${netEmoji} Net Change*\n${netDisplay}` },
-                            { type: "mrkdwn", text: `*👥 Total Members*\n${totalMembers}` }
+                            { type: "mrkdwn", text: `✅ Joined: *${stats.joins}*` },
+                            { type: "mrkdwn", text: `❌ Left: *${stats.leaves}*` },
+                            { type: "mrkdwn", text: `${netEmoji} Net Change: *${netDisplay}*` },
+                            { type: "mrkdwn", text: `👥 Total: *${totalMembers}*` }
                         ]
                     }
                 ]
