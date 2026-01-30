@@ -39,7 +39,8 @@ module.exports = {
                 year: 'numeric',
                 month: 'long',
                 day: 'numeric',
-                timeZone: timezone
+                timeZone: timezone,
+                timeZoneName: 'short'
             });
 
             const slackMessage = {

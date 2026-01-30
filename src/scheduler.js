@@ -15,7 +15,8 @@ async function sendSlackReport(webhookUrl, stats, totalMembers, timezone, guildN
             year: 'numeric',
             month: 'long',
             day: 'numeric',
-            timeZone: timezone
+            timeZone: timezone,
+            timeZoneName: 'short'
         });
 
         const joins = stats?.joins || 0;
