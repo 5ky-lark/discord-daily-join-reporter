@@ -79,12 +79,20 @@ Once the bot is running, use these commands in your server:
 
 ## Railway Deployment
 
-1. Push your code to GitHub
-2. Create a new project in Railway and connect your repo
-3. Add environment variable: `DISCORD_TOKEN`
-4. Railway will automatically deploy using the `Procfile`
+1. Push your code to GitHub.
+2. Create a new project in Railway and connect your repo.
+3. Add environment variable: `DISCORD_TOKEN`.
 
-**Note:** On Railway, you may need to set `DATABASE_PATH` to a persistent volume path if you want data to survive redeployments.
+### 💾 Persistence (Railway Volumes)
+
+By default, Railway's filesystem is ephemeral (wiped on redeploy). To keep your settings and stats:
+
+1. In your Railway project, click **New** → **Volume**.
+2. Set the **Mount Path** to `/data`.
+3. Go to your bot's **Variables** and add:
+   - `DATABASE_PATH` = `/data/tracker.db`
+
+Railway will now store your database in the persistent volume.
 
 ## Daily Report Example
 
