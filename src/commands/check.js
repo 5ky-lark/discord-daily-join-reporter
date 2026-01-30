@@ -34,14 +34,22 @@ module.exports = {
 
         // Send to Slack if configured
         if (config?.slack_webhook_url) {
-            const date = new Date().toLocaleDateString('en-US', {
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('en-US', {
                 weekday: 'long',
                 year: 'numeric',
                 month: 'long',
                 day: 'numeric',
+                timeZone: timezone
+            });
+
+            // Get timezone abbreviation nicely
+            const tzAbbr = new Intl.DateTimeFormat('en-US', {
                 timeZone: timezone,
                 timeZoneName: 'short'
-            });
+            }).formatToParts(now).find(part => part.type === 'timeZoneName').value;
+
+            const date = `${dateStr} (${tzAbbr})`;
 
             const slackMessage = {
                 blocks: [
