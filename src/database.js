@@ -49,6 +49,14 @@ db.exec(`
     CREATE INDEX IF NOT EXISTS idx_member_events_timestamp ON member_events(timestamp);
 `);
 
+// Migration: Add slack_webhook_url column if it doesn't exist
+try {
+    db.exec(`ALTER TABLE guild_config ADD COLUMN slack_webhook_url TEXT`);
+    console.log('[Database] Added slack_webhook_url column');
+} catch (e) {
+    // Column already exists, ignore error
+}
+
 // ==================== GUILD CONFIG ====================
 
 /**
