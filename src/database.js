@@ -20,6 +20,7 @@ db.exec(`
         report_time TEXT DEFAULT '10:00',
         timezone TEXT DEFAULT 'UTC',
         enabled INTEGER DEFAULT 1,
+        slack_webhook_url TEXT,
         created_at TEXT DEFAULT CURRENT_TIMESTAMP,
         updated_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
@@ -71,6 +72,7 @@ function setGuildConfig(guildId, config) {
                 report_time = COALESCE(?, report_time),
                 timezone = COALESCE(?, timezone),
                 enabled = COALESCE(?, enabled),
+                slack_webhook_url = COALESCE(?, slack_webhook_url),
                 updated_at = CURRENT_TIMESTAMP
             WHERE guild_id = ?
         `);
@@ -79,19 +81,21 @@ function setGuildConfig(guildId, config) {
             config.reportTime ?? null,
             config.timezone ?? null,
             config.enabled ?? null,
+            config.slackWebhookUrl ?? null,
             guildId
         );
     } else {
         const stmt = db.prepare(`
-            INSERT INTO guild_config (guild_id, report_channel_id, report_time, timezone, enabled)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO guild_config (guild_id, report_channel_id, report_time, timezone, enabled, slack_webhook_url)
+            VALUES (?, ?, ?, ?, ?, ?)
         `);
         stmt.run(
             guildId,
             config.reportChannelId || null,
             config.reportTime || '10:00',
             config.timezone || 'UTC',
-            config.enabled ?? 1
+            config.enabled ?? 1,
+            config.slackWebhookUrl || null
         );
     }
 

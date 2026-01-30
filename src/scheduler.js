@@ -6,6 +6,83 @@ const { getYesterdayStats, getAllEnabledGuilds, getGuildConfig } = require('./da
 const scheduledTasks = new Map();
 
 /**
+ * Send report to Slack via webhook
+ */
+async function sendSlackReport(webhookUrl, stats, totalMembers, timezone) {
+    try {
+        const date = new Date().toLocaleDateString('en-US', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            timeZone: timezone
+        });
+
+        const joins = stats?.joins || 0;
+        const leaves = stats?.leaves || 0;
+        const netChange = joins - leaves;
+        const netEmoji = netChange > 0 ? '📈' : netChange < 0 ? '📉' : '➖';
+        const netDisplay = netChange > 0 ? `+${netChange}` : netChange.toString();
+
+        const slackMessage = {
+            blocks: [
+                {
+                    type: "header",
+                    text: {
+                        type: "plain_text",
+                        text: "📊 Daily Join Report",
+                        emoji: true
+                    }
+                },
+                {
+                    type: "section",
+                    text: {
+                        type: "mrkdwn",
+                        text: `*${date}*`
+                    }
+                },
+                {
+                    type: "section",
+                    fields: [
+                        {
+                            type: "mrkdwn",
+                            text: `*✅ Joined*\n${joins}`
+                        },
+                        {
+                            type: "mrkdwn",
+                            text: `*❌ Left*\n${leaves}`
+                        },
+                        {
+                            type: "mrkdwn",
+                            text: `*${netEmoji} Net Change*\n${netDisplay}`
+                        },
+                        {
+                            type: "mrkdwn",
+                            text: `*👥 Total Members*\n${totalMembers || 'N/A'}`
+                        }
+                    ]
+                }
+            ]
+        };
+
+        const response = await fetch(webhookUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(slackMessage)
+        });
+
+        if (response.ok) {
+            console.log('[Scheduler] Slack report sent successfully');
+        } else {
+            console.error('[Scheduler] Slack webhook error:', response.status, await response.text());
+        }
+    } catch (error) {
+        console.error('[Scheduler] Error sending Slack report:', error);
+    }
+}
+
+
+/**
  * Create the daily report embed
  */
 function createDailyReportEmbed(stats, totalMembers, timezone) {
@@ -77,6 +154,11 @@ async function sendDailyReportForGuild(client, guildId) {
         await channel.send({ embeds: [embed] });
 
         console.log(`[Scheduler] Report sent for guild ${guildId} - Joins: ${stats.joins}, Leaves: ${stats.leaves}`);
+
+        // Send to Slack if configured
+        if (config.slack_webhook_url) {
+            await sendSlackReport(config.slack_webhook_url, stats, totalMembers, config.timezone || 'UTC');
+        }
     } catch (error) {
         console.error(`[Scheduler] Error sending report for guild ${guildId}:`, error);
     }

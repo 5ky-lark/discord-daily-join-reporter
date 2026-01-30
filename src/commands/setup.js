@@ -65,6 +65,21 @@ module.exports = {
             subcommand
                 .setName('view')
                 .setDescription('View current configuration')
+        )
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName('slack')
+                .setDescription('Set Slack webhook URL for reports')
+                .addStringOption(option =>
+                    option.setName('webhook_url')
+                        .setDescription('Slack Incoming Webhook URL')
+                        .setRequired(true)
+                )
+        )
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName('slack_remove')
+                .setDescription('Remove Slack integration')
         ),
 
     async execute(interaction) {
@@ -173,6 +188,7 @@ module.exports = {
                 }
 
                 const enabled = config?.enabled ? '✅ Enabled' : '❌ Disabled';
+                const slackStatus = config?.slack_webhook_url ? '✅ Connected' : '❌ Not configured';
 
                 const embed = new EmbedBuilder()
                     .setTitle('⚙️ Join Tracker Configuration')
@@ -181,9 +197,51 @@ module.exports = {
                         { name: '📢 Report Channel', value: channelMention, inline: true },
                         { name: '🕐 Report Time', value: config?.report_time || '10:00', inline: true },
                         { name: '🌍 Timezone', value: config?.timezone || 'UTC', inline: true },
-                        { name: '📊 Status', value: enabled, inline: true }
+                        { name: '📊 Status', value: enabled, inline: true },
+                        { name: '💬 Slack', value: slackStatus, inline: true }
                     )
                     .setFooter({ text: 'Use /setup commands to modify settings' })
+                    .setTimestamp();
+
+                await interaction.reply({ embeds: [embed], ephemeral: true });
+                break;
+            }
+
+            case 'slack': {
+                const webhookUrl = interaction.options.getString('webhook_url');
+
+                // Validate webhook URL format
+                if (!webhookUrl.startsWith('https://hooks.slack.com/')) {
+                    await interaction.reply({
+                        content: '❌ Invalid Slack webhook URL. It should start with `https://hooks.slack.com/`',
+                        ephemeral: true
+                    });
+                    return;
+                }
+
+                setGuildConfig(guildId, { slackWebhookUrl: webhookUrl });
+
+                const embed = new EmbedBuilder()
+                    .setTitle('✅ Slack Integration Added')
+                    .setDescription('Daily reports will now also be sent to Slack!')
+                    .setColor(0x00ff00)
+                    .setTimestamp();
+
+                await interaction.reply({ embeds: [embed], ephemeral: true });
+                break;
+            }
+
+            case 'slack_remove': {
+                // Set to empty string to clear it
+                const stmt = require('../database').db.prepare(`
+                    UPDATE guild_config SET slack_webhook_url = NULL WHERE guild_id = ?
+                `);
+                stmt.run(guildId);
+
+                const embed = new EmbedBuilder()
+                    .setTitle('🗑️ Slack Integration Removed')
+                    .setDescription('Daily reports will no longer be sent to Slack.')
+                    .setColor(0xff9900)
                     .setTimestamp();
 
                 await interaction.reply({ embeds: [embed], ephemeral: true });

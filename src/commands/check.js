@@ -31,5 +31,55 @@ module.exports = {
             .setTimestamp();
 
         await interaction.reply({ embeds: [embed] });
+
+        // Send to Slack if configured
+        if (config?.slack_webhook_url) {
+            const date = new Date().toLocaleDateString('en-US', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                timeZone: timezone
+            });
+
+            const slackMessage = {
+                blocks: [
+                    {
+                        type: "header",
+                        text: {
+                            type: "plain_text",
+                            text: "📊 Current Stats (Today)",
+                            emoji: true
+                        }
+                    },
+                    {
+                        type: "section",
+                        text: {
+                            type: "mrkdwn",
+                            text: `*${date}*`
+                        }
+                    },
+                    {
+                        type: "section",
+                        fields: [
+                            { type: "mrkdwn", text: `*✅ Joined*\n${stats.joins}` },
+                            { type: "mrkdwn", text: `*❌ Left*\n${stats.leaves}` },
+                            { type: "mrkdwn", text: `*${netEmoji} Net Change*\n${netDisplay}` },
+                            { type: "mrkdwn", text: `*👥 Total Members*\n${totalMembers}` }
+                        ]
+                    }
+                ]
+            };
+
+            try {
+                await fetch(config.slack_webhook_url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(slackMessage)
+                });
+            } catch (err) {
+                console.error('[Check] Slack webhook error:', err);
+            }
+        }
     }
 };
