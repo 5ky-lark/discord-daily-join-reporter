@@ -3,7 +3,8 @@ require('dotenv').config();
 const { Client, Collection, GatewayIntentBits, Events } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
-const { startAllSchedulers } = require('./scheduler');
+const { startAllSchedulers, startMidnightSnapshots, captureMidnightSnapshot } = require('./scheduler');
+const { getAllEnabledGuilds } = require('./database');
 
 // Create client with required intents
 const client = new Client({
@@ -66,12 +67,21 @@ client.on(Events.InteractionCreate, async interaction => {
 });
 
 // Bot ready event
-client.once(Events.ClientReady, readyClient => {
+client.once(Events.ClientReady, async readyClient => {
     console.log(`[Bot] Logged in as ${readyClient.user.tag}`);
     console.log(`[Bot] Serving ${readyClient.guilds.cache.size} guild(s)`);
 
     // Start schedulers for all configured guilds
     startAllSchedulers(client);
+
+    // Start midnight snapshot schedulers
+    startMidnightSnapshots(client);
+
+    // Capture initial snapshot for today if not already captured
+    const guilds = getAllEnabledGuilds();
+    for (const config of guilds) {
+        await captureMidnightSnapshot(client, config.guild_id);
+    }
 
     console.log('[Bot] Ready!');
 });

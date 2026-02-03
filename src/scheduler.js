@@ -1,9 +1,10 @@
 const cron = require('node-cron');
 const { EmbedBuilder } = require('discord.js');
-const { getYesterdayStats, getAllEnabledGuilds, getGuildConfig } = require('./database');
+const { getYesterdayStats, getAllEnabledGuilds, getGuildConfig, storeTotalMembers } = require('./database');
 
 // Store scheduled tasks by guild
 const scheduledTasks = new Map();
+const midnightTasks = new Map();
 
 /**
  * Send report to Slack via webhook
@@ -136,19 +137,24 @@ async function sendDailyReportForGuild(client, guildId) {
             return;
         }
 
-        // Get yesterday's stats
+        // Get yesterday's stats (includes stored total_members from midnight snapshot)
         let stats = getYesterdayStats(guildId);
         if (!stats) {
-            stats = { joins: 0, leaves: 0, net: 0 };
+            stats = { joins: 0, leaves: 0, net: 0, total_members: null };
         }
 
-        // Get current member count and guild name
-        let totalMembers = null;
+        // Use the stored total_members from yesterday's midnight snapshot
+        // Fall back to live count if no snapshot exists
+        let totalMembers = stats.total_members;
         let guildName = 'Server';
         try {
             const guild = await client.guilds.fetch(guildId);
-            totalMembers = guild.memberCount;
             guildName = guild.name;
+            // If no stored snapshot, use live count as fallback
+            if (totalMembers === null) {
+                totalMembers = guild.memberCount;
+                console.log(`[Scheduler] No midnight snapshot for ${guildId}, using live count`);
+            }
         } catch (e) {
             console.error(`[Scheduler] Could not fetch guild ${guildId}:`, e.message);
         }
@@ -212,6 +218,63 @@ function startAllSchedulers(client) {
 }
 
 /**
+ * Capture midnight snapshot of member count for a guild
+ */
+async function captureMidnightSnapshot(client, guildId) {
+    try {
+        const guild = await client.guilds.fetch(guildId);
+        const memberCount = guild.memberCount;
+        storeTotalMembers(guildId, memberCount);
+        console.log(`[Scheduler] Midnight snapshot for ${guild.name}: ${memberCount} members`);
+    } catch (error) {
+        console.error(`[Scheduler] Error capturing snapshot for ${guildId}:`, error);
+    }
+}
+
+/**
+ * Schedule midnight snapshot for a guild
+ */
+function scheduleMidnightSnapshot(client, guildId, timezone) {
+    // Stop existing midnight task for this guild
+    if (midnightTasks.has(guildId)) {
+        midnightTasks.get(guildId).stop();
+    }
+
+    // Run at 23:59 (just before midnight) in the guild's timezone
+    const cronExpression = '59 23 * * *';
+
+    console.log(`[Scheduler] Scheduling midnight snapshot for guild ${guildId} (${timezone})`);
+
+    const task = cron.schedule(cronExpression, () => {
+        console.log(`[Scheduler] Running midnight snapshot for guild ${guildId}...`);
+        captureMidnightSnapshot(client, guildId);
+    }, {
+        timezone: timezone
+    });
+
+    midnightTasks.set(guildId, task);
+}
+
+/**
+ * Start midnight snapshot schedulers for all guilds
+ */
+function startMidnightSnapshots(client) {
+    const guilds = getAllEnabledGuilds();
+
+    console.log(`[Scheduler] Starting midnight snapshots for ${guilds.length} guild(s)...`);
+
+    for (const config of guilds) {
+        scheduleMidnightSnapshot(
+            client,
+            config.guild_id,
+            config.timezone || 'UTC'
+        );
+    }
+
+    console.log('[Scheduler] All midnight snapshots scheduled');
+}
+
+/**
  * Stop scheduler for a specific guild
  */
 function stopGuildScheduler(guildId) {
@@ -230,6 +293,10 @@ function stopAllSchedulers() {
         task.stop();
     }
     scheduledTasks.clear();
+    for (const [guildId, task] of midnightTasks) {
+        task.stop();
+    }
+    midnightTasks.clear();
     console.log('[Scheduler] All schedulers stopped');
 }
 
@@ -259,5 +326,8 @@ module.exports = {
     stopGuildScheduler,
     refreshGuildScheduler,
     sendDailyReportForGuild,
-    createDailyReportEmbed
+    createDailyReportEmbed,
+    startMidnightSnapshots,
+    scheduleMidnightSnapshot,
+    captureMidnightSnapshot
 };

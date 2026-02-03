@@ -31,6 +31,7 @@ db.exec(`
         date TEXT NOT NULL,
         joins INTEGER DEFAULT 0,
         leaves INTEGER DEFAULT 0,
+        total_members INTEGER,
         created_at TEXT DEFAULT CURRENT_TIMESTAMP,
         UNIQUE(guild_id, date)
     );
@@ -53,6 +54,14 @@ db.exec(`
 try {
     db.exec(`ALTER TABLE guild_config ADD COLUMN slack_webhook_url TEXT`);
     console.log('[Database] Added slack_webhook_url column');
+} catch (e) {
+    // Column already exists, ignore error
+}
+
+// Migration: Add total_members column to daily_stats if it doesn't exist
+try {
+    db.exec(`ALTER TABLE daily_stats ADD COLUMN total_members INTEGER`);
+    console.log('[Database] Added total_members column');
 } catch (e) {
     // Column already exists, ignore error
 }
@@ -272,10 +281,35 @@ function getYesterdayStats(guildId) {
     const yesterday = yesterdayObj.toLocaleDateString('en-CA', { timeZone: timezone });
 
     const stmt = db.prepare(`
-        SELECT date, joins, leaves, (joins - leaves) as net
+        SELECT date, joins, leaves, (joins - leaves) as net, total_members
         FROM daily_stats WHERE guild_id = ? AND date = ?
     `);
     return stmt.get(guildId, yesterday);
+}
+
+/**
+ * Store the total members count for a specific date (called at midnight)
+ */
+function storeTotalMembers(guildId, totalMembers) {
+    const config = getGuildConfig(guildId);
+    const timezone = config?.timezone || 'UTC';
+    const today = getDateForTimezone(timezone);
+
+    ensureTodayExists(guildId, timezone);
+
+    const stmt = db.prepare(`
+        UPDATE daily_stats SET total_members = ?
+        WHERE guild_id = ? AND date = ?
+    `);
+    stmt.run(totalMembers, guildId, today);
+}
+
+/**
+ * Get the total members from yesterday's record
+ */
+function getYesterdayTotalMembers(guildId) {
+    const stats = getYesterdayStats(guildId);
+    return stats?.total_members || null;
 }
 
 module.exports = {
@@ -289,5 +323,7 @@ module.exports = {
     getStatsRange,
     getDailyBreakdown,
     getYesterdayStats,
-    getDateForTimezone
+    getDateForTimezone,
+    storeTotalMembers,
+    getYesterdayTotalMembers
 };
