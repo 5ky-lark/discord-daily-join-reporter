@@ -137,24 +137,20 @@ async function sendDailyReportForGuild(client, guildId) {
             return;
         }
 
-        // Get yesterday's stats (includes stored total_members from midnight snapshot)
+        // Get yesterday's stats (now uses 10 AM boundary, so this is 10 AM yesterday to 10 AM today)
         let stats = getYesterdayStats(guildId);
         if (!stats) {
-            stats = { joins: 0, leaves: 0, net: 0, total_members: null };
+            stats = { joins: 0, leaves: 0, net: 0 };
         }
 
-        // Use the stored total_members from yesterday's midnight snapshot
-        // Fall back to live count if no snapshot exists
-        let totalMembers = stats.total_members;
+        // Get LIVE member count - this now matches the stats period!
+        // Since day boundary is 10 AM, stats and total are for the same period
+        let totalMembers = null;
         let guildName = 'Server';
         try {
             const guild = await client.guilds.fetch(guildId);
+            totalMembers = guild.memberCount;
             guildName = guild.name;
-            // If no stored snapshot, use live count as fallback
-            if (totalMembers === null) {
-                totalMembers = guild.memberCount;
-                console.log(`[Scheduler] No midnight snapshot for ${guildId}, using live count`);
-            }
         } catch (e) {
             console.error(`[Scheduler] Could not fetch guild ${guildId}:`, e.message);
         }

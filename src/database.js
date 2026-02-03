@@ -134,10 +134,33 @@ function getAllEnabledGuilds() {
 
 /**
  * Get today's date in YYYY-MM-DD format for a specific timezone
+ * NOTE: Day boundary is at 10 AM, not midnight!
+ * This means activity from 10 AM Day 1 to 10 AM Day 2 counts as "Day 1"
  */
-function getDateForTimezone(timezone = 'UTC') {
+function getDateForTimezone(timezone = 'UTC', reportTime = '10:00') {
     try {
-        return new Date().toLocaleDateString('en-CA', { timeZone: timezone });
+        const now = new Date();
+
+        // Get current hour in the target timezone
+        const formatter = new Intl.DateTimeFormat('en-US', {
+            timeZone: timezone,
+            hour: 'numeric',
+            hour12: false
+        });
+        const currentHour = parseInt(formatter.format(now));
+
+        // Parse report time (default 10:00)
+        const [reportHour] = reportTime.split(':').map(Number);
+
+        // If current time is BEFORE report hour, we're still in "yesterday"
+        // Example: At 9 AM on Feb 3, we're still counting as Feb 2
+        if (currentHour < reportHour) {
+            const yesterday = new Date(now);
+            yesterday.setDate(yesterday.getDate() - 1);
+            return yesterday.toLocaleDateString('en-CA', { timeZone: timezone });
+        }
+
+        return now.toLocaleDateString('en-CA', { timeZone: timezone });
     } catch {
         return new Date().toLocaleDateString('en-CA', { timeZone: 'UTC' });
     }
