@@ -293,15 +293,20 @@ function getDailyBreakdown(guildId, days) {
 }
 
 /**
- * Get yesterday's stats for a guild
+ * Get yesterday's stats for a guild (uses 10 AM boundary)
  */
 function getYesterdayStats(guildId) {
     const config = getGuildConfig(guildId);
     const timezone = config?.timezone || 'UTC';
+    const reportTime = config?.report_time || '10:00';
 
-    const yesterdayObj = new Date();
-    yesterdayObj.setDate(yesterdayObj.getDate() - 1);
-    const yesterday = yesterdayObj.toLocaleDateString('en-CA', { timeZone: timezone });
+    // Get "today" using the 10 AM boundary logic
+    const today = getDateForTimezone(timezone, reportTime);
+
+    // Calculate yesterday by subtracting 1 day from today
+    const todayObj = new Date(today + 'T00:00:00');
+    todayObj.setDate(todayObj.getDate() - 1);
+    const yesterday = todayObj.toISOString().split('T')[0];
 
     const stmt = db.prepare(`
         SELECT date, joins, leaves, (joins - leaves) as net, total_members
